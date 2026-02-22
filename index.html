@@ -267,7 +267,7 @@ function updateBg(sceneIndex) {
     document.body.style.background = sceneBgs[Math.min(sceneIndex, sceneBgs.length - 1)];
 }
 
-// 幻想的な夜の音楽（Web Audio API）
+// LoFi チルアウト BGM（Web Audio API）
 let audioCtx = null;
 let musicNodes = [];
 
@@ -277,101 +277,175 @@ function startMusic() {
 
     const masterGain = audioCtx.createGain();
     masterGain.gain.setValueAtTime(0, audioCtx.currentTime);
-    masterGain.gain.linearRampToValueAtTime(0.18, audioCtx.currentTime + 3);
+    masterGain.gain.linearRampToValueAtTime(0.22, audioCtx.currentTime + 4);
     masterGain.connect(audioCtx.destination);
 
-    // リバーブ（コンボリューション代わりにディレイで残響感）
-    const convolver = audioCtx.createDelay(2.0);
-    convolver.delayTime.value = 0.35;
-    const reverbGain = audioCtx.createGain();
-    reverbGain.gain.value = 0.4;
-    convolver.connect(reverbGain);
-    reverbGain.connect(masterGain);
+    // ローパスフィルター（LoFiらしいこもった質感）
+    const lpf = audioCtx.createBiquadFilter();
+    lpf.type = "lowpass";
+    lpf.frequency.value = 1800;
+    lpf.Q.value = 0.7;
+    lpf.connect(masterGain);
 
-    // 幻想的なベルの音型（Cマイナーペンタトニック風）
-    const bellNotes = [261.63, 311.13, 349.23, 392.00, 466.16, 523.25, 622.25, 698.46];
-    const bassNotes = [130.81, 155.56, 174.61, 196.00];
+    // ディレイ（温かみのある残響）
+    const delay = audioCtx.createDelay(0.5);
+    delay.delayTime.value = 0.28;
+    const delayGain = audioCtx.createGain();
+    delayGain.gain.value = 0.25;
+    delay.connect(delayGain);
+    delayGain.connect(lpf);
 
-    // ベルのアルペジオ
-    function playBell(freq, time, duration, vol) {
-        const osc = audioCtx.createOscillator();
-        const env = audioCtx.createGain();
-        osc.type = "sine";
-        osc.frequency.value = freq;
-        env.gain.setValueAtTime(0, time);
-        env.gain.linearRampToValueAtTime(vol, time + 0.01);
-        env.gain.exponentialRampToValueAtTime(0.001, time + duration);
-        osc.connect(env);
-        env.connect(masterGain);
-        env.connect(convolver);
-        osc.start(time);
-        osc.stop(time + duration);
-        musicNodes.push(osc);
-
-        // 倍音を少し加えて幻想的に
-        const osc2 = audioCtx.createOscillator();
-        const env2 = audioCtx.createGain();
-        osc2.type = "sine";
-        osc2.frequency.value = freq * 2.01;
-        env2.gain.setValueAtTime(0, time);
-        env2.gain.linearRampToValueAtTime(vol * 0.3, time + 0.01);
-        env2.gain.exponentialRampToValueAtTime(0.001, time + duration * 0.7);
-        osc2.connect(env2);
-        env2.connect(masterGain);
-        osc2.start(time);
-        osc2.stop(time + duration * 0.7);
-        musicNodes.push(osc2);
-    }
-
-    // 低音のドローン
-    function playDrone(freq, time, duration) {
-        const osc = audioCtx.createOscillator();
-        const env = audioCtx.createGain();
-        osc.type = "sine";
-        osc.frequency.value = freq;
-        env.gain.setValueAtTime(0, time);
-        env.gain.linearRampToValueAtTime(0.06, time + 1.5);
-        env.gain.linearRampToValueAtTime(0.06, time + duration - 1.5);
-        env.gain.linearRampToValueAtTime(0, time + duration);
-        osc.connect(env);
-        env.connect(masterGain);
-        osc.start(time);
-        osc.stop(time + duration);
-        musicNodes.push(osc);
-    }
-
-    // ループする音楽パターン
-    const loopDuration = 16;
-    function scheduleLoop(startTime) {
-        // ドローン
-        playDrone(bassNotes[0], startTime, loopDuration);
-        playDrone(bassNotes[2], startTime + loopDuration * 0.5, loopDuration * 0.5);
-
-        // ベルのアルペジオパターン
-        const pattern = [
-            [0,    bellNotes[0], 3.5, 0.12],
-            [1.8,  bellNotes[2], 3.0, 0.09],
-            [3.2,  bellNotes[4], 2.8, 0.10],
-            [4.5,  bellNotes[3], 2.5, 0.08],
-            [6.0,  bellNotes[5], 3.2, 0.11],
-            [7.5,  bellNotes[2], 2.8, 0.08],
-            [8.8,  bellNotes[6], 3.5, 0.10],
-            [10.2, bellNotes[4], 3.0, 0.09],
-            [11.5, bellNotes[1], 2.5, 0.08],
-            [13.0, bellNotes[7], 4.0, 0.12],
-            [14.5, bellNotes[3], 3.0, 0.09],
-        ];
-        pattern.forEach(([offset, freq, dur, vol]) => {
-            playBell(freq, startTime + offset, dur, vol);
+    // テープ感のためのわずかなコーラス（ピッチ揺れ）
+    function makePad(freq, time, dur, vol) {
+        [0, 0.005, -0.004].forEach((detune, i) => {
+            const osc = audioCtx.createOscillator();
+            const env = audioCtx.createGain();
+            osc.type = i === 0 ? "triangle" : "sine";
+            osc.frequency.value = freq * (1 + detune);
+            env.gain.setValueAtTime(0, time);
+            env.gain.linearRampToValueAtTime(vol * (i === 0 ? 1 : 0.4), time + 0.6);
+            env.gain.linearRampToValueAtTime(vol * (i === 0 ? 0.85 : 0.3), time + dur - 0.8);
+            env.gain.linearRampToValueAtTime(0, time + dur);
+            osc.connect(env);
+            env.connect(lpf);
+            osc.start(time);
+            osc.stop(time + dur);
+            musicNodes.push(osc);
         });
+    }
+
+    // ピアノ風のメロディノート
+    function playNote(freq, time, dur, vol) {
+        const osc = audioCtx.createOscillator();
+        const osc2 = audioCtx.createOscillator();
+        const env = audioCtx.createGain();
+        osc.type = "triangle";
+        osc2.type = "sine";
+        osc.frequency.value = freq;
+        osc2.frequency.value = freq * 2;
+        env.gain.setValueAtTime(0, time);
+        env.gain.linearRampToValueAtTime(vol, time + 0.015);
+        env.gain.exponentialRampToValueAtTime(vol * 0.5, time + 0.12);
+        env.gain.exponentialRampToValueAtTime(0.001, time + dur);
+        osc.connect(env); osc2.connect(env);
+        env.connect(lpf);
+        env.connect(delay);
+        osc.start(time); osc2.start(time);
+        osc.stop(time + dur); osc2.stop(time + dur);
+        musicNodes.push(osc, osc2);
+    }
+
+    // LoFiビート（柔らかいキックとスネア風ノイズ）
+    function playKick(time) {
+        const osc = audioCtx.createOscillator();
+        const env = audioCtx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(140, time);
+        osc.frequency.exponentialRampToValueAtTime(40, time + 0.15);
+        env.gain.setValueAtTime(0.5, time);
+        env.gain.exponentialRampToValueAtTime(0.001, time + 0.25);
+        osc.connect(env); env.connect(masterGain);
+        osc.start(time); osc.stop(time + 0.3);
+        musicNodes.push(osc);
+    }
+
+    function playSnare(time) {
+        const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.15, audioCtx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length) * 0.5;
+        const src = audioCtx.createBufferSource();
+        const env = audioCtx.createGain();
+        const hpf = audioCtx.createBiquadFilter();
+        hpf.type = "highpass"; hpf.frequency.value = 600;
+        src.buffer = buf;
+        env.gain.setValueAtTime(0.18, time);
+        env.gain.exponentialRampToValueAtTime(0.001, time + 0.14);
+        src.connect(hpf); hpf.connect(env); env.connect(masterGain);
+        src.start(time);
+        musicNodes.push(src);
+    }
+
+    function playHihat(time, vol) {
+        const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.05, audioCtx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length) * vol;
+        const src = audioCtx.createBufferSource();
+        const hpf = audioCtx.createBiquadFilter();
+        hpf.type = "highpass"; hpf.frequency.value = 5000;
+        src.buffer = buf;
+        src.connect(hpf); hpf.connect(masterGain);
+        src.start(time);
+        musicNodes.push(src);
+    }
+
+    // Fメジャー7系のLoFiコード進行: Fmaj7 → Am7 → Dm7 → Cmaj7
+    // テンポ: 約75BPM、1拍 = 0.8秒、4拍 = 3.2秒、16拍ループ = 12.8秒
+    const bpm = 75;
+    const beat = 60 / bpm;
+
+    // コード構成音（Hz）
+    const chords = [
+        // Fmaj7: F3 A3 C4 E4
+        [174.61, 220.00, 261.63, 329.63],
+        // Am7: A2 C3 E3 G3
+        [110.00, 130.81, 164.81, 196.00],
+        // Dm7: D3 F3 A3 C4
+        [146.83, 174.61, 220.00, 261.63],
+        // Cmaj7: C3 E3 G3 B3
+        [130.81, 164.81, 196.00, 246.94],
+    ];
+
+    // ベースライン（ルート音）
+    const bassFreqs = [87.31, 55.00, 73.42, 65.41]; // F2 A1 D2 C2
+
+    // メロディ（ゆったりとした即興風）
+    const melodyPattern = [
+        [0,       329.63, beat * 1.8, 0.10],
+        [beat*2,  261.63, beat * 1.5, 0.09],
+        [beat*3.5,293.66, beat * 1.2, 0.08],
+        [beat*5,  349.23, beat * 2.0, 0.10],
+        [beat*7,  329.63, beat * 1.5, 0.09],
+        [beat*8.5,293.66, beat * 1.0, 0.08],
+        [beat*10, 261.63, beat * 2.5, 0.10],
+        [beat*12.5,220.00,beat * 1.5, 0.09],
+        [beat*14, 246.94, beat * 2.0, 0.11],
+    ];
+
+    const loopDuration = beat * 16;
+
+    function scheduleLoop(startTime) {
+        // コードパッド（各4拍）
+        for (let i = 0; i < 4; i++) {
+            const t = startTime + i * beat * 4;
+            chords[i].forEach((freq, j) => {
+                makePad(freq, t + j * 0.04, beat * 4.2, 0.038);
+            });
+            // ベース
+            makePad(bassFreqs[i], t, beat * 3.8, 0.06);
+        }
+
+        // メロディ
+        melodyPattern.forEach(([offset, freq, dur, vol]) => {
+            playNote(freq, startTime + offset, dur, vol);
+        });
+
+        // ビートパターン（ゆったりLoFiビート）
+        for (let step = 0; step < 16; step++) {
+            const t = startTime + step * beat;
+            if (step % 8 === 0) playKick(t);
+            if (step % 8 === 2) playKick(t + beat * 0.5);
+            if (step % 4 === 2) playSnare(t);
+            if (step % 2 === 0) playHihat(t, 0.12);
+            if (step % 2 === 1) playHihat(t, 0.06);
+        }
 
         // 次のループをスケジュール
         const nextLoop = startTime + loopDuration;
         const now = audioCtx.currentTime;
-        const delay = (nextLoop - now - 0.5) * 1000;
+        const msDelay = (nextLoop - now - 0.5) * 1000;
         setTimeout(() => {
             if (audioCtx) scheduleLoop(audioCtx.currentTime + 0.5);
-        }, Math.max(delay, 100));
+        }, Math.max(msDelay, 100));
     }
 
     scheduleLoop(audioCtx.currentTime + 0.5);
