@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Quiet Grace  みおの1日 〜よるのじかん編〜</title>
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+    background: linear-gradient(160deg, #b8d4e8 0%, #a0c0d8 50%, #90b0cc 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 16px;
+    transition: background 2s ease;
+}
+
+.game-container {
+    width: 100%;
+    max-width: 400px;
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px);
+    padding: 24px 20px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+}
+
+h1 {
+    font-size: 15px;
+    text-align: center;
+    margin: 0 0 4px 0;
+    color: rgba(255, 255, 255, 0.5);
+    letter-spacing: 0.1em;
+    font-weight: normal;
+}
+
+.subtitle {
+    font-size: 11px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.3);
+    letter-spacing: 0.15em;
+    margin-bottom: 18px;
+}
+
+.scene-label {
+    font-size: 11px;
+    color: rgba(200, 180, 230, 0.6);
+    text-align: center;
+    margin-bottom: 10px;
+    letter-spacing: 0.1em;
+    min-height: 16px;
+}
+
+.scene-image {
+    width: 65%;
+    display: block;
+    margin: 0 auto 16px auto;
+    border-radius: 14px;
+    opacity: 0;
+    animation: fadeIn 1.5s ease forwards;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.text {
+    min-height: 90px;
+    margin-bottom: 18px;
+    line-height: 1.85;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.82);
+    opacity: 0;
+    animation: fadeText 1.2s ease forwards;
+    animation-delay: 0.4s;
+    text-align: justify;
+}
+
+@keyframes fadeText {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+button {
+    width: 100%;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.07);
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+    letter-spacing: 0.04em;
+    line-height: 1.5;
+    text-align: left;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+button:hover {
+    background: rgba(255, 255, 255, 0.13);
+    border-color: rgba(200, 180, 230, 0.4);
+}
+
+/* ステータスバー */
+.status {
+    margin-top: 18px;
+}
+
+.status-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 7px;
+    gap: 10px;
+}
+
+.status-label {
+    width: 78px;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.45);
+    flex-shrink: 0;
+    letter-spacing: 0.05em;
+}
+
+.status-bar-bg {
+    flex: 1;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.status-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.6s ease;
+}
+
+.grace-fill {
+    background: linear-gradient(to right, #c8a0c8, #e8b4d0);
+}
+
+.stress-fill {
+    background: linear-gradient(to right, #8ab0a0, #a0c8b0);
+}
+
+/* エンディング用 */
+.shop-message {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.55);
+    text-align: center;
+    margin: 14px 0 10px 0;
+    line-height: 1.8;
+}
+
+.shop-button {
+    width: 100%;
+    padding: 13px;
+    margin-bottom: 8px;
+    border: 1px solid rgba(200, 170, 220, 0.4);
+    border-radius: 10px;
+    background: rgba(180, 150, 200, 0.12);
+    font-size: 13px;
+    color: rgba(220, 200, 240, 0.9);
+    cursor: pointer;
+    letter-spacing: 0.08em;
+    font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+    transition: background 0.2s ease;
+}
+
+.shop-button:hover {
+    background: rgba(180, 150, 200, 0.22);
+}
+
+/* 星の装飾 */
+.stars {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 0;
+}
+
+.star {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: white;
+    border-radius: 50%;
+    opacity: 0;
+    animation: twinkle var(--duration) ease-in-out infinite;
+    animation-delay: var(--delay);
+}
+
+@keyframes twinkle {
+    0%, 100% { opacity: 0; }
+    50% { opacity: var(--opacity); }
+}
+
+.game-container {
+    position: relative;
+    z-index: 1;
+}
+</style>
+</head>
+<body>
+
+<!-- 星の背景 -->
+<div class="stars" id="stars"></div>
+
+<div class="game-container">
+    <h1>Quiet Grace</h1>
+    <div class="subtitle">みおの1日 〜よるのじかん編〜</div>
+    <div class="scene-label" id="sceneLabel"></div>
+    <div class="text" id="story"></div>
+    <div id="choices"></div>
+    <div class="status">
+        <div class="status-row">
+            <span class="status-label">🌸 やすらぎ</span>
+            <div class="status-bar-bg"><div class="status-bar-fill grace-fill" id="graceBar" style="width:50%"></div></div>
+        </div>
+        <div class="status-row">
+            <span class="status-label">🍃 つかれ</span>
+            <div class="status-bar-bg"><div class="status-bar-fill stress-fill" id="stressBar" style="width:30%"></div></div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 星を生成
+(function() {
+    const starsEl = document.getElementById("stars");
+    for (let i = 0; i < 60; i++) {
+        const star = document.createElement("div");
+        star.className = "star";
+        star.style.left = Math.random() * 100 + "%";
+        star.style.top = Math.random() * 100 + "%";
+        star.style.setProperty("--duration", (2 + Math.random() * 4) + "s");
+        star.style.setProperty("--delay", (Math.random() * 4) + "s");
+        star.style.setProperty("--opacity", (0.2 + Math.random() * 0.6).toString());
+        starsEl.appendChild(star);
+    }
+})();
+
+// シーンごとの背景色（ライトブルー→夜の深い紫へ）
+const sceneBgs = [
+    "linear-gradient(160deg, #b8d4e8 0%, #a0c0d8 50%, #90b0cc 100%)", // 帰り道：ライトブルー
+    "linear-gradient(160deg, #8aaec8 0%, #7090b0 50%, #6080a0 100%)", // 帰宅：少し暗いブルー
+    "linear-gradient(160deg, #607898 0%, #506888 50%, #405878 100%)", // お風呂：青みがかった紫
+    "linear-gradient(160deg, #485070 0%, #3c4468 50%, #303860 100%)", // 夜の時間：深い青紫
+    "linear-gradient(160deg, #362850 0%, #2e2448 50%, #26203e 100%)", // 寝る前：濃い紫
+    "linear-gradient(160deg, #2e2845 0%, #3d3260 50%, #302848 100%)", // おやすみ：最も深い夜
+];
+
+function updateBg(sceneIndex) {
+    document.body.style.background = sceneBgs[Math.min(sceneIndex, sceneBgs.length - 1)];
+}
+
+// 幻想的な夜の音楽（Web Audio API）
+let audioCtx = null;
+let musicNodes = [];
+
+function startMusic() {
+    if (audioCtx) return;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    const masterGain = audioCtx.createGain();
+    masterGain.gain.setValueAtTime(0, audioCtx.currentTime);
+    masterGain.gain.linearRampToValueAtTime(0.18, audioCtx.currentTime + 3);
+    masterGain.connect(audioCtx.destination);
+
+    // リバーブ（コンボリューション代わりにディレイで残響感）
+    const convolver = audioCtx.createDelay(2.0);
+    convolver.delayTime.value = 0.35;
+    const reverbGain = audioCtx.createGain();
+    reverbGain.gain.value = 0.4;
+    convolver.connect(reverbGain);
+    reverbGain.connect(masterGain);
+
+    // 幻想的なベルの音型（Cマイナーペンタトニック風）
+    const bellNotes = [261.63, 311.13, 349.23, 392.00, 466.16, 523.25, 622.25, 698.46];
+    const bassNotes = [130.81, 155.56, 174.61, 196.00];
+
+    // ベルのアルペジオ
+    function playBell(freq, time, duration, vol) {
+        const osc = audioCtx.createOscillator();
+        const env = audioCtx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = freq;
+        env.gain.setValueAtTime(0, time);
+        env.gain.linearRampToValueAtTime(vol, time + 0.01);
+        env.gain.exponentialRampToValueAtTime(0.001, time + duration);
+        osc.connect(env);
+        env.connect(masterGain);
+        env.connect(convolver);
+        osc.start(time);
+        osc.stop(time + duration);
+        musicNodes.push(osc);
+
+        // 倍音を少し加えて幻想的に
+        const osc2 = audioCtx.createOscillator();
+        const env2 = audioCtx.createGain();
+        osc2.type = "sine";
+        osc2.frequency.value = freq * 2.01;
+        env2.gain.setValueAtTime(0, time);
+        env2.gain.linearRampToValueAtTime(vol * 0.3, time + 0.01);
+        env2.gain.exponentialRampToValueAtTime(0.001, time + duration * 0.7);
+        osc2.connect(env2);
+        env2.connect(masterGain);
+        osc2.start(time);
+        osc2.stop(time + duration * 0.7);
+        musicNodes.push(osc2);
+    }
+
+    // 低音のドローン
+    function playDrone(freq, time, duration) {
+        const osc = audioCtx.createOscillator();
+        const env = audioCtx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = freq;
+        env.gain.setValueAtTime(0, time);
+        env.gain.linearRampToValueAtTime(0.06, time + 1.5);
+        env.gain.linearRampToValueAtTime(0.06, time + duration - 1.5);
+        env.gain.linearRampToValueAtTime(0, time + duration);
+        osc.connect(env);
+        env.connect(masterGain);
+        osc.start(time);
+        osc.stop(time + duration);
+        musicNodes.push(osc);
+    }
+
+    // ループする音楽パターン
+    const loopDuration = 16;
+    function scheduleLoop(startTime) {
+        // ドローン
+        playDrone(bassNotes[0], startTime, loopDuration);
+        playDrone(bassNotes[2], startTime + loopDuration * 0.5, loopDuration * 0.5);
+
+        // ベルのアルペジオパターン
+        const pattern = [
+            [0,    bellNotes[0], 3.5, 0.12],
+            [1.8,  bellNotes[2], 3.0, 0.09],
+            [3.2,  bellNotes[4], 2.8, 0.10],
+            [4.5,  bellNotes[3], 2.5, 0.08],
+            [6.0,  bellNotes[5], 3.2, 0.11],
+            [7.5,  bellNotes[2], 2.8, 0.08],
+            [8.8,  bellNotes[6], 3.5, 0.10],
+            [10.2, bellNotes[4], 3.0, 0.09],
+            [11.5, bellNotes[1], 2.5, 0.08],
+            [13.0, bellNotes[7], 4.0, 0.12],
+            [14.5, bellNotes[3], 3.0, 0.09],
+        ];
+        pattern.forEach(([offset, freq, dur, vol]) => {
+            playBell(freq, startTime + offset, dur, vol);
+        });
+
+        // 次のループをスケジュール
+        const nextLoop = startTime + loopDuration;
+        const now = audioCtx.currentTime;
+        const delay = (nextLoop - now - 0.5) * 1000;
+        setTimeout(() => {
+            if (audioCtx) scheduleLoop(audioCtx.currentTime + 0.5);
+        }, Math.max(delay, 100));
+    }
+
+    scheduleLoop(audioCtx.currentTime + 0.5);
+}
+
+let grace = 50;
+let stress = 30;
+let scene = 0;
+
+const story = document.getElementById("story");
+const choices = document.getElementById("choices");
+const sceneLabel = document.getElementById("sceneLabel");
+
+const sceneLabels = [
+    "🚶 帰り道",
+    "🏠 帰宅",
+    "🛁 お風呂",
+    "🍵 夜の時間",
+    "📖 寝る前",
+    "🌙 おやすみ",
+];
+
+function updateStatus() {
+    document.getElementById("graceBar").style.width = Math.min(Math.max(grace, 0), 100) + "%";
+    document.getElementById("stressBar").style.width = Math.min(Math.max(stress, 0), 100) + "%";
+}
+
+function nextScene() {
+    story.style.animation = "none";
+    story.offsetHeight;
+    story.style.animation = null;
+    choices.innerHTML = "";
+    sceneLabel.innerHTML = sceneLabels[scene] || "";
+    updateBg(scene);
+    startMusic();
+
+    if (scene === 0) {
+        story.innerHTML =
+            "<img src='images/mio_evening.png' class='scene-image'>" +
+            "冷たい夜風が頬をかすめる。今日も一日、よくがんばった。駅のホームで電車を待ちながら、上司の言葉がまだ少し頭に残っている。外の空気から、気持ちを切り替えるのは、思ったより難しい。";
+        createChoice("🎵 好きな音楽をかけて、今日のことを手放す", 8, -6);
+        createChoice("🌃 引っかかりをそのまま感じながら、ゆっくり歩く", -3, 5);
+    }
+    else if (scene === 1) {
+        story.innerHTML =
+            "<img src='images/mio_home.png' class='scene-image'>" +
+            "玄関を開けると、静かな部屋。外の冷たさをまだ肌に感じながら、みおは着替えることにした。ふわりとやわらかい部屋着に袖を通した瞬間、少しだけ呼吸が深くなった気がした。";
+        createChoice("🫧 まずお風呂でしっかり温まる", 8, -6);
+        createChoice("🛋 少しだけ休んでから、ゆっくり動く", 4, -2);
+    }
+    else if (scene === 2) {
+        story.innerHTML =
+            "<img src='images/mio_bath.png' class='scene-image'>" +
+            "湯船につかりながら、ふと思う。「わたし、ちゃんとやれてるのかな」。正解はない問いが、湯気の中に漂う。芯まで温まると、不思議と答えを急がなくてもいい気がしてくる。";
+        createChoice("🌿 考えるのをやめて、ただ温まる", 10, -8);
+        createChoice("💭 静かに、自分と向き合ってみる", 6, 2);
+    }
+    else if (scene === 3) {
+        story.innerHTML =
+            "<img src='images/mio_tea.png' class='scene-image'>" +
+            "お風呂上がり、急いで服を着る。せっかく温まった体を、冷やしたくない。好きなカップに温かいものを注いで、ソファに座る。スマホの通知が2件。この静かな時間を、何に使おう。";
+        createChoice("📵 通知を閉じて、自分の時間にする", 10, -6);
+        createChoice("📱 気になって、つい開いてしまう", -5, 8);
+    }
+    else if (scene === 4) {
+        story.innerHTML =
+            "<img src='images/mio_book.png' class='scene-image'>" +
+            "スキンケアをしながら、今日一日を思い返す。うまくいかなかったこともあった。でも誰かに「ありがとう」と言えた瞬間もあった。眠る前のこの時間だけは、自分をいたわることにしている。";
+        createChoice("🌸 今日のちいさなよかったことを、心に留める", 10, -5);
+        createChoice("📝 明日もっとうまくやろう、と自分に言い聞かせる", -4, 8);
+    }
+    else if (scene === 5) {
+        story.innerHTML =
+            "<img src='images/mio_sleep.png' class='scene-image'>" +
+            "電気を消す。やわらかい素材が肌を包んでいる。暗闇の中で、みおはふと思う。「自分を大切にするって、どういうことだろう」。答えはまだわからないけれど、今夜の選択が、少しずつ教えてくれる気がした。";
+        createChoice("🌙 答えを出さないまま、目を閉じる", 10, -8);
+        createChoice("✨ 明日の自分に、そっと委ねる", 8, -6);
+    }
+    else {
+        ending();
+    }
+
+    updateStatus();
+}
+
+function createChoice(text, graceChange, stressChange) {
+    const button = document.createElement("button");
+    button.innerText = text;
+    button.onclick = function() {
+        grace += graceChange;
+        stress += stressChange;
+        scene++;
+        nextScene();
+    };
+    choices.appendChild(button);
+}
+
+function ending() {
+    sceneLabel.innerHTML = "✨ おやすみなさい";
+
+    let endingHTML = "";
+    let shopMessage = "";
+
+    if (grace >= 75 && stress <= 35) {
+        endingHTML =
+            "<img src='images/ending_goodnight.png' class='scene-image'>" +
+            "🌙 やさしい夜<br><br>みおは今夜、自分をとても大切にした。<br>布団の中が、やわらかく温かい。<br>おやすみなさい、みお。よく眠れますように。";
+        shopMessage = "自分をやさしく扱える夜に。Pure Grace のアイテムを。";
+    } else if (grace >= 55 && stress <= 55) {
+        endingHTML =
+            "<img src='images/ending_quiet.png' class='scene-image'>" +
+            "🌿 静かな夜<br><br>少し揺れながらも、みおは自分のペースを守った。<br>完璧じゃなくていい。今夜のみおは、じゅうぶんだ。";
+        shopMessage = "揺れながらも、自分でいられるあなたへ。";
+    } else {
+        endingHTML =
+            "<img src='images/ending_tired.png' class='scene-image'>" +
+            "🌧 疲れた夜<br><br>今日は少し、自分より外を優先してしまった。<br>でも明日がある。今夜はただ、眠ればいい。";
+        shopMessage = "疲れた夜のあなたに、ほっとできる時間を。";
+    }
+
+    story.innerHTML = endingHTML;
+    choices.innerHTML =
+        "<p class='shop-message'>" + shopMessage + "</p>" +
+        "<button class='shop-button' onclick=\"window.open('https://puregrace.shopselect.net/items/all', '_blank')\">今夜のみおに寄り添うアイテムを見てみる</button>" +
+        "<button onclick='location.reload()'>もう一度プレイ</button>";
+}
+
+nextScene();
+</script>
+
+</body>
+</html>
