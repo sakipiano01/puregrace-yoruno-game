@@ -112,7 +112,6 @@ button:hover {
     border-color: rgba(200, 180, 230, 0.4);
 }
 
-/* ステータスバー */
 .status {
     margin-top: 18px;
 }
@@ -154,7 +153,6 @@ button:hover {
     background: linear-gradient(to right, #8ab0a0, #a0c8b0);
 }
 
-/* エンディング用 */
 .shop-message {
     font-size: 13px;
     color: rgba(255, 255, 255, 0.55);
@@ -182,7 +180,6 @@ button:hover {
     background: rgba(180, 150, 200, 0.22);
 }
 
-/* 星の装飾 */
 .stars {
     position: fixed;
     top: 0; left: 0;
@@ -212,11 +209,19 @@ button:hover {
     position: relative;
     z-index: 1;
 }
+
+/* 音楽スタートボタン（最初だけ表示） */
+#musicHint {
+    font-size: 10px;
+    color: rgba(255,255,255,0.25);
+    text-align: center;
+    margin-top: 10px;
+    letter-spacing: 0.08em;
+}
 </style>
 </head>
 <body>
 
-<!-- 星の背景 -->
 <div class="stars" id="stars"></div>
 
 <div class="game-container">
@@ -235,6 +240,7 @@ button:hover {
             <div class="status-bar-bg"><div class="status-bar-fill stress-fill" id="stressBar" style="width:30%"></div></div>
         </div>
     </div>
+    <div id="musicHint">♪ 選択肢を選ぶと音楽が始まります</div>
 </div>
 
 <script>
@@ -253,41 +259,48 @@ button:hover {
     }
 })();
 
-// シーンごとの背景色（ライトブルー→夜の深い紫へ）
 const sceneBgs = [
-    "linear-gradient(160deg, #b8d4e8 0%, #a0c0d8 50%, #90b0cc 100%)", // 帰り道：ライトブルー
-    "linear-gradient(160deg, #8aaec8 0%, #7090b0 50%, #6080a0 100%)", // 帰宅：少し暗いブルー
-    "linear-gradient(160deg, #607898 0%, #506888 50%, #405878 100%)", // お風呂：青みがかった紫
-    "linear-gradient(160deg, #485070 0%, #3c4468 50%, #303860 100%)", // 夜の時間：深い青紫
-    "linear-gradient(160deg, #362850 0%, #2e2448 50%, #26203e 100%)", // 寝る前：濃い紫
-    "linear-gradient(160deg, #2e2845 0%, #3d3260 50%, #302848 100%)", // おやすみ：最も深い夜
+    "linear-gradient(160deg, #b8d4e8 0%, #a0c0d8 50%, #90b0cc 100%)",
+    "linear-gradient(160deg, #8aaec8 0%, #7090b0 50%, #6080a0 100%)",
+    "linear-gradient(160deg, #607898 0%, #506888 50%, #405878 100%)",
+    "linear-gradient(160deg, #485070 0%, #3c4468 50%, #303860 100%)",
+    "linear-gradient(160deg, #362850 0%, #2e2448 50%, #26203e 100%)",
+    "linear-gradient(160deg, #2e2845 0%, #3d3260 50%, #302848 100%)",
 ];
 
 function updateBg(sceneIndex) {
     document.body.style.background = sceneBgs[Math.min(sceneIndex, sceneBgs.length - 1)];
 }
 
-// LoFi チルアウト BGM（Web Audio API）
+// ==============================
+// BGM（ユーザー操作後に開始）
+// ==============================
 let audioCtx = null;
 let musicNodes = [];
+let musicStarted = false;
 
 function startMusic() {
-    if (audioCtx) return;
+    if (musicStarted) return;
+    musicStarted = true;
+
+    // ユーザー操作後なのでAudioContext作成OK
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // ヒント非表示
+    const hint = document.getElementById("musicHint");
+    if (hint) hint.style.display = "none";
 
     const masterGain = audioCtx.createGain();
     masterGain.gain.setValueAtTime(0, audioCtx.currentTime);
     masterGain.gain.linearRampToValueAtTime(0.22, audioCtx.currentTime + 4);
     masterGain.connect(audioCtx.destination);
 
-    // ローパスフィルター（LoFiらしいこもった質感）
     const lpf = audioCtx.createBiquadFilter();
     lpf.type = "lowpass";
     lpf.frequency.value = 1800;
     lpf.Q.value = 0.7;
     lpf.connect(masterGain);
 
-    // ディレイ（温かみのある残響）
     const delay = audioCtx.createDelay(0.5);
     delay.delayTime.value = 0.28;
     const delayGain = audioCtx.createGain();
@@ -295,7 +308,6 @@ function startMusic() {
     delay.connect(delayGain);
     delayGain.connect(lpf);
 
-    // テープ感のためのわずかなコーラス（ピッチ揺れ）
     function makePad(freq, time, dur, vol) {
         [0, 0.005, -0.004].forEach((detune, i) => {
             const osc = audioCtx.createOscillator();
@@ -314,7 +326,6 @@ function startMusic() {
         });
     }
 
-    // ピアノ風のメロディノート
     function playNote(freq, time, dur, vol) {
         const osc = audioCtx.createOscillator();
         const osc2 = audioCtx.createOscillator();
@@ -335,7 +346,6 @@ function startMusic() {
         musicNodes.push(osc, osc2);
     }
 
-    // LoFiビート（柔らかいキックとスネア風ノイズ）
     function playKick(time) {
         const osc = audioCtx.createOscillator();
         const env = audioCtx.createGain();
@@ -378,58 +388,45 @@ function startMusic() {
         musicNodes.push(src);
     }
 
-    // Fメジャー7系のLoFiコード進行: Fmaj7 → Am7 → Dm7 → Cmaj7
-    // テンポ: 約75BPM、1拍 = 0.8秒、4拍 = 3.2秒、16拍ループ = 12.8秒
     const bpm = 75;
     const beat = 60 / bpm;
 
-    // コード構成音（Hz）
     const chords = [
-        // Fmaj7: F3 A3 C4 E4
         [174.61, 220.00, 261.63, 329.63],
-        // Am7: A2 C3 E3 G3
         [110.00, 130.81, 164.81, 196.00],
-        // Dm7: D3 F3 A3 C4
         [146.83, 174.61, 220.00, 261.63],
-        // Cmaj7: C3 E3 G3 B3
         [130.81, 164.81, 196.00, 246.94],
     ];
 
-    // ベースライン（ルート音）
-    const bassFreqs = [87.31, 55.00, 73.42, 65.41]; // F2 A1 D2 C2
+    const bassFreqs = [87.31, 55.00, 73.42, 65.41];
 
-    // メロディ（ゆったりとした即興風）
     const melodyPattern = [
-        [0,       329.63, beat * 1.8, 0.10],
-        [beat*2,  261.63, beat * 1.5, 0.09],
-        [beat*3.5,293.66, beat * 1.2, 0.08],
-        [beat*5,  349.23, beat * 2.0, 0.10],
-        [beat*7,  329.63, beat * 1.5, 0.09],
-        [beat*8.5,293.66, beat * 1.0, 0.08],
-        [beat*10, 261.63, beat * 2.5, 0.10],
-        [beat*12.5,220.00,beat * 1.5, 0.09],
-        [beat*14, 246.94, beat * 2.0, 0.11],
+        [0,          329.63, beat * 1.8, 0.10],
+        [beat*2,     261.63, beat * 1.5, 0.09],
+        [beat*3.5,   293.66, beat * 1.2, 0.08],
+        [beat*5,     349.23, beat * 2.0, 0.10],
+        [beat*7,     329.63, beat * 1.5, 0.09],
+        [beat*8.5,   293.66, beat * 1.0, 0.08],
+        [beat*10,    261.63, beat * 2.5, 0.10],
+        [beat*12.5,  220.00, beat * 1.5, 0.09],
+        [beat*14,    246.94, beat * 2.0, 0.11],
     ];
 
     const loopDuration = beat * 16;
 
     function scheduleLoop(startTime) {
-        // コードパッド（各4拍）
         for (let i = 0; i < 4; i++) {
             const t = startTime + i * beat * 4;
             chords[i].forEach((freq, j) => {
                 makePad(freq, t + j * 0.04, beat * 4.2, 0.038);
             });
-            // ベース
             makePad(bassFreqs[i], t, beat * 3.8, 0.06);
         }
 
-        // メロディ
         melodyPattern.forEach(([offset, freq, dur, vol]) => {
             playNote(freq, startTime + offset, dur, vol);
         });
 
-        // ビートパターン（ゆったりLoFiビート）
         for (let step = 0; step < 16; step++) {
             const t = startTime + step * beat;
             if (step % 8 === 0) playKick(t);
@@ -439,7 +436,6 @@ function startMusic() {
             if (step % 2 === 1) playHihat(t, 0.06);
         }
 
-        // 次のループをスケジュール
         const nextLoop = startTime + loopDuration;
         const now = audioCtx.currentTime;
         const msDelay = (nextLoop - now - 0.5) * 1000;
@@ -451,6 +447,9 @@ function startMusic() {
     scheduleLoop(audioCtx.currentTime + 0.5);
 }
 
+// ==============================
+// ゲームロジック
+// ==============================
 let grace = 50;
 let stress = 30;
 let scene = 0;
@@ -480,7 +479,7 @@ function nextScene() {
     choices.innerHTML = "";
     sceneLabel.innerHTML = sceneLabels[scene] || "";
     updateBg(scene);
-    startMusic();
+    // ※ startMusic() はここでは呼ばない（ボタンクリック時に呼ぶ）
 
     if (scene === 0) {
         story.innerHTML =
@@ -535,6 +534,7 @@ function createChoice(text, graceChange, stressChange) {
     const button = document.createElement("button");
     button.innerText = text;
     button.onclick = function() {
+        startMusic(); // ← ユーザー操作時に呼ぶ（ブラウザ制限をクリア）
         grace += graceChange;
         stress += stressChange;
         scene++;
